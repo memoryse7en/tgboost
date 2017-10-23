@@ -1,4 +1,8 @@
-from tgboost.loss import CustomizeLoss, SquareLoss, LogisticLoss
+import sys
+sys.path.append('../tgboost')
+
+#from tgboost.loss import CustomizeLoss, SquareLoss, LogisticLoss
+from loss import CustomizeLoss, SquareLoss, LogisticLoss
 import numpy as np
 import autograd.numpy as anp
 
@@ -26,7 +30,7 @@ print Customize_SquareLoss_object.hess(preds, labels)
 print "---- test LogisticLoss ----"
 preds = np.array([0.1,0.9,0.5,0.8])
 labels = np.array([0,0,1,1])
-LogisticLoss_object = LogisticLoss(l2_regularization=0.2)
+LogisticLoss_object = LogisticLoss(reg_lambda=0.2)
 print LogisticLoss_object.grad(preds, labels)
 print LogisticLoss_object.hess(preds, labels)
 
@@ -37,7 +41,7 @@ def logistic_loss(pred,y):
 
 preds = np.array([0.1,0.9,0.5,0.8])
 labels = np.array([0,0,1,1])
-Customize_LogisticLoss_object = CustomizeLoss(logistic_loss,0.2)
+Customize_LogisticLoss_object = CustomizeLoss(logistic_loss,reg_lambda = 0.2)
 print Customize_LogisticLoss_object.grad(preds, labels)
 print Customize_LogisticLoss_object.hess(preds, labels)
 

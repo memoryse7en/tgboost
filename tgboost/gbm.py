@@ -66,7 +66,8 @@ class TGBoost(object):
         self.min_child_weight = min_child_weight
         self.scale_pos_weight = scale_pos_weight
         self.first_round_pred = 0.0
-
+		
+		#将X,y修改为能通过int下标（从0开始）进行索引的FramData
         X.reset_index(drop=True, inplace=True)
         y.reset_index(drop=True, inplace=True)
 
@@ -98,13 +99,18 @@ class TGBoost(object):
                 raise TypeError("val_X should be 'pd.core.frame.DataFrame'")
             if not isinstance(val_y, pd.core.series.Series):
                 raise TypeError("val_X should be 'pd.core.series.Series'")
-            val_X.reset_index(drop=True, inplace=True)
-            val_y.reset_index(drop=True, inplace=True)
+            
+			#val_X is [n_samples n_feature],index and column are both started from 0
+			val_X.reset_index(drop=True, inplace=True)
+            
+			#val_y [n_samples,2],index is started from 0 and column is [lable,y_pred]
+			val_y.reset_index(drop=True, inplace=True)
             val_Y = pd.DataFrame(val_y.values, columns=['label'])
-            val_Y['y_pred'] = self.first_round_pred
+            val_Y['y_pred'] = self.first_round_pred  #set default pred value
 
 
         if maximize:
+			#inf is a Infinity positive number
             best_val_metric = - np.inf
             best_round = 0
             become_worse_round = 0
@@ -119,16 +125,17 @@ class TGBoost(object):
         Y['grad'] = self.loss.grad(Y.y_pred.values, Y.label.values)
         Y['hess'] = self.loss.hess(Y.y_pred.values, Y.label.values)
         Y['sample_weight'] = 1.0
-        Y.loc[Y.label==1, 'sample_weight'] = self.scale_pos_weight
+        Y.loc[Y.label==1, 'sample_weight'] = self.scale_pos_weight  #可根据需要改变正样本权重
 
         for i in range(self.num_boost_round):
             # weighted grad and hess
             Y.grad = Y.grad * Y.sample_weight
             Y.hess = Y.hess * Y.sample_weight
             # row and column sample before training the current tree
-            data = X.sample(frac=self.colsample_bytree, axis=1)
+            data = X.sample(frac=self.colsample_bytree, axis=1) #column sample
             data = pd.concat([data, Y], axis=1)
-            data = data.sample(frac=self.subsample, axis=0)
+            data = data.sample(frac=self.subsample, axis=0) #row sample
+
             Y_selected = data[['label', 'y_pred', 'grad', 'hess']]
             X_selected = data.drop(['label', 'y_pred', 'grad', 'hess', 'sample_weight'], axis=1)
 
@@ -165,7 +172,10 @@ class TGBoost(object):
                     print "TGBoost round {iteration}, train-{eval_metric} is {train_metric}".format(
                         iteration=i, eval_metric=self.eval_metric, train_metric=train_metric)
                 else:
+					#val_Y is [n_sampels 2], column is label,pred
                     val_Y['y_pred'] += self.eta * tree.predict(val_X)
+
+					#evaludate on the current predict result
                     val_metric = mertric_func(self.loss.transform(val_Y.y_pred.values), val_Y.label.values)
                     print "TGBoost round {iteration}, train-{eval_metric} is {train_metric}, val-{eval_metric} is {val_metric}".format(
                         iteration=i, eval_metric=self.eval_metric, train_metric=train_metric, val_metric=val_metric
@@ -179,7 +189,10 @@ class TGBoost(object):
                             become_worse_round = 0
                         else:
                             become_worse_round += 1
-                        if become_worse_round > early_stopping_rounds:
+                        
+						#when the evaluation result is worse more than early_stopping_rounds times
+						#stop to continue building tree
+						if become_worse_round > early_stopping_rounds:
                             print "TGBoost training Stop, best round is {best_round}, best {eval_metric} is {best_val_metric}".format(
                                 best_round=best_round, eval_metric=eval_metric, best_val_metric=best_val_metric
                             )
@@ -205,7 +218,8 @@ class TGBoost(object):
         preds += self.first_round_pred
         for tree in self.trees:
             preds += self.eta * tree.predict(X)
-
+		
+		#why need transform
         return self.loss.transform(preds)
 
 

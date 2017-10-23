@@ -8,7 +8,7 @@ def xgb_score(loss, preds, labels):
     """
     G = loss.grad(preds, labels).sum()
     H = loss.hess(preds, labels).sum()
-    return 0.5 * (G ** 2) / (H + loss.l2_regularization)
+    return 0.5 * (G ** 2) / (H + loss.reg_lambda)
 
 
 def mse_score(labels):

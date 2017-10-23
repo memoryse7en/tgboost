@@ -1,7 +1,9 @@
 import numpy as np
+import sys
+sys.path.append('../tgboost')
 
-from tests.split_criterion import xgb_score,mse_score,entropy_score,xgb_score_gain,mse_score_gain,entropy_score_gain
-from tgboost.loss import SquareLoss,CustomizeLoss
+from split_criterion import xgb_score,mse_score,entropy_score,xgb_score_gain,mse_score_gain,entropy_score_gain
+from loss import SquareLoss,CustomizeLoss
 
 
 def square_loss(pred, y):

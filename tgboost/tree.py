@@ -80,6 +80,7 @@ class Tree(object):
 
         find best threshold for the given feature: col
         """
+		#从data中选取指定feature(col)构造新的数据查找最佳分裂阈值
         selected_data = data[[col, 'label', 'grad', 'hess']]
         best_threshold = None
         best_gain = - np.inf
@@ -92,6 +93,7 @@ class Tree(object):
         H_nan = data_nan.hess.sum()
         data_not_nan = selected_data[~mask]
 
+		#sort data by the selected feature
         data_not_nan.reset_index(inplace=True)
         data_not_nan.is_copy = False
         data_not_nan[col+'_idx'] = data_not_nan[col].argsort()
@@ -114,20 +116,25 @@ class Tree(object):
             nan_goto_left_gain = self.calculate_split_gain(left_Y,right_Y,G_nan,H_nan,nan_direction=0)
             nan_goto_right_gain = self.calculate_split_gain(left_Y, right_Y, G_nan, H_nan, nan_direction=1)
             if nan_goto_left_gain < nan_goto_right_gain:
-                nan_direction = 1
+                cur_nan_direction = 1
                 this_gain = nan_goto_right_gain
             else:
-                nan_direction = 0
+                cur_nan_direction = 0
                 this_gain = nan_goto_left_gain
 
             if this_gain > best_gain:
                 best_gain = this_gain
                 best_threshold = this_threshold
+				nan_direction = cur_nan_direction
 
         return col, best_threshold, best_gain, nan_direction
 
     def find_best_feature_threshold(self, X, Y):
         """
+		para:
+			X [selected_n_samples,selected_feature_samples]
+			Y [selected_n_samples,5] column is [label,y_pred,grad,hess,sample_weight]
+
         find the (feature,threshold) with the largest gain
         if there are NAN in the feature, find its best direction to go
         """
@@ -217,7 +224,13 @@ class Tree(object):
         return TreeNode(is_leaf=False, leaf_score=None, feature=best_feature, threshold=best_threshold,
                         left_child=left_tree, right_child=right_tree, nan_direction=nan_direction)
 
-    def fit(self, X, Y, max_depth=6, min_child_weight=1, colsample_bylevel=1.0, min_sample_split=10, reg_lambda=1.0, gamma=0.0, num_thread=-1):
+    def fit(self, X, Y, max_depth=6, min_child_weight=1,
+			colsample_bylevel=1.0, min_sample_split=10,
+			reg_lambda=1.0, gamma=0.0, num_thread=-1):
+		'''
+		X:pd.DataFram [n_sampels,n_features]
+		Y:pd.DataFram [n_samples,5],column is [label,y_pred,grad,hess,sample_weight]
+		'''
         self.colsample_bylevel = colsample_bylevel
         self.min_sample_split = min_sample_split
         self.reg_lambda = reg_lambda

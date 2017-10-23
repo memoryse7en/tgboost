@@ -1,5 +1,7 @@
+import sys
+sys.path.append('../tgboost')
 import numpy as np
-from tgboost.metric import get_metric
+from metric import get_metric
 
 
 preds = np.array([0.2,0.1,0.5,0.6,0.9,0.01,0.8,0.2,0.6,0.7])
